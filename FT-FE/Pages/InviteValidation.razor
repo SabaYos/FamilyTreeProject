@@ -1,0 +1,174 @@
+﻿@page "/invite"
+
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@layout MainLayout
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Net.Http.Headers
+
+<PageTitle>FamilyTree - Validate Invite</PageTitle>
+
+<div class="background-container">
+    <MudCard Class="mt-4">
+        <MudCardContent>
+            <MudText Typo="Typo.h5">Validate Family Tree Invite</MudText>
+
+            @if (isLoading)
+            {
+                <MudProgressCircular Class="mt-3" Color="Color.Primary" Indeterminate="true" />
+            }
+            else if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-3" CloseIcon="@Icons.Material.Filled.Close" OnClose="@(() => ErrorMessage = null)">@ErrorMessage</MudAlert>
+            }
+            else if (!isValidInvite)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-3">This invite is invalid or has expired. Please request a new invite.</MudAlert>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="@(() => NavigationManager.NavigateTo("/familytreeview"))">Back to Family Trees</MudButton>
+            }
+            else
+            {
+                <MudText Class="mt-3">You have been invited to join the family tree: <strong>@FamilyTreeName</strong>.</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="AcceptInvite" Disabled="@isSubmitting">Accept Invite</MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Secondary" Class="mt-3" OnClick="@(() => NavigationManager.NavigateTo("/familytreeview"))">Cancel</MudButton>
+            }
+        </MudCardContent>
+    </MudCard>
+</div>
+
+@code {
+    private string token;
+    private string ErrorMessage;
+    private bool isLoading;
+    private bool isSubmitting;
+    private bool isValidInvite;
+    private int FamilyTreeId;
+    private string FamilyTreeName;
+    private string authToken;
+
+    private const string ApiEndpoint = "invite";
+    private const string AuthScheme = "Bearer";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (!user?.Identity?.IsAuthenticated ?? true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        authToken = await LocalStorage.GetItemAsync<string>("jwtToken");
+        if (string.IsNullOrEmpty(authToken))
+        {
+            ErrorMessage = "No valid token found. Please log in again.";
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        // Parse the invite token from the URL query parameter
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        token = query["token"];
+
+        if (string.IsNullOrEmpty(token))
+        {
+            ErrorMessage = "No invite token provided.";
+            return;
+        }
+
+        await ValidateInvite();
+    }
+
+    private async Task ValidateInvite()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, authToken);
+
+            var response = await client.GetAsync($"{ApiEndpoint}/validate?token={token}");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<InviteValidationResponse>();
+                // Check if familyTreeId is present to determine validity
+                isValidInvite = result.FamilyTreeName != null;
+                if (isValidInvite)
+                {
+                    FamilyTreeId = result.FamilyTreeId;
+                }
+            }
+            else
+            {
+                ErrorMessage = await HandleApiError(response);
+                isValidInvite = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error validating invite: {ex.Message}";
+            isValidInvite = false;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task AcceptInvite()
+    {
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, authToken);
+
+            var response = await client.PostAsync($"{ApiEndpoint}/accept?token={token}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo($"/familytree/{FamilyTreeId}/members");
+            }
+            else
+            {
+                ErrorMessage = await HandleApiError(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error accepting invite: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<string> HandleApiError(HttpResponseMessage response)
+    {
+        return response.StatusCode switch
+        {
+            System.Net.HttpStatusCode.Unauthorized => "Session expired. Please log in again.",
+            System.Net.HttpStatusCode.NotFound => "Invite not found.",
+            System.Net.HttpStatusCode.BadRequest => await response.Content.ReadAsStringAsync(),
+            _ => $"Failed to process request: {response.StatusCode}"
+        };
+    }
+
+    public class InviteValidationResponse
+    {
+        public int FamilyTreeId { get; set; }
+        public string FamilyTreeName { get; set; }
+        public string Role { get; set; }
+    }
+}

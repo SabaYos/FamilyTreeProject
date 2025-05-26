@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "Login+Frontend",
+    "Projects": [
+      {
+        "Path": "FT-FE\\FamilyTreeFrontend.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      },
+      {
+        "Path": "FamilyTreebe\\LoginAPI.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      }
+    ]
+  }
+]

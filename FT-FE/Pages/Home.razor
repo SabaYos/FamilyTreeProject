@@ -1,0 +1,104 @@
+﻿@page "/"
+@layout MainLayout
+
+<PageTitle>FamilyTree</PageTitle>
+<script src="https://kit.fontawesome.com/a5b991d8a8.js" crossorigin="anonymous"></script>
+<link href="~/css/homepage.css" rel="stylesheet" />
+<div class="homepage" id="home">
+    <div class="hero-section">
+        <div class="txt">
+            <p style="font-size:56px">Welcome to Family Tree</p>
+            <p style="font-size:27px">Your journey to uncover your roots starts here.</p>
+        </div>
+        <div class="logo-container">
+            <img src="Images/Logo.png" alt="Logo" class="logo-img" />
+        </div>
+    </div>
+
+    <div class="features-section" id="features">
+        <div class="features-dis">
+            <p style="font-size:36px"><strong>Explore the Features</strong></p>
+            <p style="font-size:18px">Discover your family history with our innovative Family Tree app. From building connections to managing inheritance and health insights, it’s your all-in-one tool for preserving your legacy.</p>
+        </div>
+        <div class="box">
+            <a href="/familytreeview" target="_blank">
+                <i class="fa-solid fa-users-between-lines"></i>
+                <h3 class="feature-title">Search Your Family Tree</h3>
+                <p class="feature-description">Search for your name and uncover your family tree.</p>
+            </a>
+        </div>
+        <div class="box">
+            <a href="/LegalAssistance" target="_blank">
+                <i class="fa-solid fa-scale-balanced"></i>
+                <h3 class="feature-title">Legal Assistance</h3>
+                <p class="feature-description">Calculate inheritance shares according to your country's laws.</p>
+            </a>
+        </div>
+        <div class="box">
+            <a href="/HealthInsights" target="_blank">
+                <i class="fa-solid fa-dna"></i>
+                <h3 class="feature-title">Health Insights</h3>
+                <p class="feature-description">Predict genetic conditions based on your family history.</p>
+            </a>
+        </div>
+
+    </div>
+
+    <div class="cta-section">
+        <div class="cta-txt">
+            <h2>Start Your Journey Today!</h2>
+            <p>Begin exploring your family tree and connect with your heritage like never before.</p>
+            <button class="get-started-btn" onclick="window.open('/login', '_blank')">Get Started</button>
+        </div>
+    </div>
+
+    <div class="about-section" id="about">
+        <div class="tree-sample"> <img src="Images/tree-sample.png" class="tree-sample" /> </div>
+        <div class="about-txt">
+            <h2>About Family Tree</h2>
+            <p>
+                Family Tree helps you explore your roots, manage your family's legacy, and gain insights into your heritage. With innovative tools and a user-friendly design, we make family history accessible to everyone.
+            </p>
+            <div class="about-icons">
+                <a href="\FamilyTreeView" title="Discover Your Roots" target="_blank">
+                    <i class="fa-solid fa-users-between-lines"></i>
+                </a>
+                <a href="\LegalAssistance" title="Legal Assistance" target="_blank">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                </a>
+                <a href="\HealthInsights" title="Health Insights" target="_blank">
+                    <i class="fa-solid fa-dna"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="contact-info-section" id="contact">
+        <h2>Contact Us</h2>
+        <p>We’re here to help! Reach out to us for any inquiries, feedback, or support.</p>
+
+        <div class="contact-details">
+            <p><i class="fa-solid fa-envelope"></i> <a href="https://outlook.live.com/mail/0/" target="_blank">sabayosre12@gmail.com</a></p>
+            <p><i class="fa-solid fa-phone"></i> +962791430955</p>
+            <p><i class="fa-brands fa-linkedin"></i> <a href="https://linkedin.com/in/saba-yosre-3171b7317" target="_blank">Saba Yosre</a></p>
+
+        </div>
+    </div>
+
+
+
+
+</div>
+
+
+
+
+@code {
+    private void StartNow()
+    {
+        // Navigation or logic for starting the app.
+        Console.WriteLine("Get Started button clicked!");
+    }
+}

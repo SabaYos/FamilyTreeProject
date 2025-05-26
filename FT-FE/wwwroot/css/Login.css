@@ -1,0 +1,106 @@
+﻿/* Background container styling */
+.background-container {
+    background-color: white;
+    background-image: url('../images/logo.png');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    padding: 10px;
+}
+
+/* Login card styling */
+.card {
+    border-radius: 40px;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.75); /* Slight transparency */
+    overflow: hidden;
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2); /* Soft shadow */
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem; 
+    width: 500px;
+    height: 100%;
+}
+
+
+.form-item{
+    padding:0.5rem;
+}
+
+
+/* Form input fields */
+.form-control {
+    border-radius: 20px;
+    border: 2px solid rgba(14, 65, 88, 0.3); /* Consistent border */
+    padding: 0.75rem;
+    font-size: 1rem;
+    background-color: rgba(255, 255, 255, 0.9); /* Consistent background */
+    color: #0e4158;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Soft shadow */
+    transition: all 0.3s ease-in-out;
+}
+
+    /* Focused input fields */
+    .form-control:focus {
+        background-color: rgba(255, 255, 255, 1); /* No transparency on focus */
+        border: 2px solid #0e4158; /* Highlighted border */
+        box-shadow: 0 0 8px rgba(14, 65, 88, 0.5); /* Glow effect */
+    }
+
+
+a {
+    padding:0.3rem;
+    text-decoration: none;
+}
+
+
+/* Button styling */
+.btn {
+    background-color: #0e4158;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0.75rem;
+    border-radius: 20px;
+    border: none;
+    width: 100%; 
+    margin-top: 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+    .btn:hover {
+        background: linear-gradient(45deg, #0e4158, #206e93);
+        color: #ffffff;
+    }
+
+/* Links */
+.a {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.p{
+    all:unset;
+    display: revert;
+}
+    a:hover {
+        color: #0056b3;
+    }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .card {
+        width: 90%; /* Adjust card width for smaller screens */
+    }
+}
+
+
+

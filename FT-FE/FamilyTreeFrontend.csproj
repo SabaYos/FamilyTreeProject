@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="C:\Users\sabay\.nuget\packages\d3\7.9.0\contentFiles\any\any\wwwroot\lib\d3\API.md" />
+    <Compile Remove="C:\Users\sabay\.nuget\packages\d3\7.9.0\contentFiles\any\any\wwwroot\lib\d3\CHANGES.md" />
+    <Compile Remove="C:\Users\sabay\.nuget\packages\d3\7.9.0\contentFiles\any\any\wwwroot\lib\d3\d3.js" />
+    <Compile Remove="C:\Users\sabay\.nuget\packages\d3\7.9.0\contentFiles\any\any\wwwroot\lib\d3\d3.min.js" />
+    <Compile Remove="C:\Users\sabay\.nuget\packages\d3\7.9.0\contentFiles\any\any\wwwroot\lib\d3\d3.mjs" />
+    <Compile Remove="C:\Users\sabay\.nuget\packages\d3\7.9.0\contentFiles\any\any\wwwroot\lib\d3\LICENSE" />
+    <Compile Remove="C:\Users\sabay\.nuget\packages\d3\7.9.0\contentFiles\any\any\wwwroot\lib\d3\README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\Images\Logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\Images\Logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.3.1" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="MudBlazor" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="8.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="8.0.12" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.1" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <ProjectReference Include="..\SharedModels\SharedModels.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SharedModels\SharedModels.csproj" />
+  </ItemGroup>
+
+
+</Project>

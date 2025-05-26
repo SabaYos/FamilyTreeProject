@@ -1,0 +1,100 @@
+﻿/* Reset default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Main layout */
+.main-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #e0f7fa;
+    color: #206e93;
+    font-family: Arial, sans-serif;
+}
+
+/* Header */
+.header {
+    width: 100%;
+    height:contain;
+}
+
+.navbar {
+    display: flex;
+    justify-content:left;
+    align-items: center;
+    padding: 0;
+    background-color: white; /* Override MudNavMenu's default color */
+}
+
+/* Logo */
+.logo-nav {
+    justify-content: left;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    height: 50px; /* Adjust based on your logo size */
+    width: auto;
+}
+
+/* Navigation Links */
+.nav-links-container {
+    display: flex;
+    align-items: center;
+    justify-content: right;
+}
+
+.navbar .mud-nav-link {
+    color: #206e93 !important; /* Force font color */
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    margin: 0 0.25rem;
+    transition: none !important; /* Remove hover transition */
+}
+
+    .navbar .mud-nav-link:hover,
+    .navbar .mud-nav-link:focus,
+    .navbar .mud-nav-link:active {
+        background-color: transparent !important; /* Remove hover background */
+        color: #206e93 !important; /* Ensure color stays the same */
+        box-shadow: none !important; /* Remove any shadow effects */
+    }
+
+
+
+
+/* Content */
+.content {
+    flex: 1;
+    padding-top: 0;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 1rem;
+    background-color: white;
+    color: #206e93;
+    border-top: 1px solid #206e93;
+}
+
+/* Feature Cards (if present in @Body) - Remove hover effects */
+.mud-card {
+    background-color: #e0f7fa; /* Match the light blue from your screenshot */
+    color: #206e93 !important;
+    transition: none !important;
+}
+
+    .mud-card:hover,
+    .mud-card:focus,
+    .mud-card:active {
+        background-color: #e0f7fa !important; /* Prevent color change */
+        box-shadow: none !important; /* Remove shadow */
+    }

@@ -1,0 +1,17 @@
+﻿.link {
+    stroke: #555;
+    stroke-opacity: 0.6;
+    fill: none;
+}
+
+.node {
+    cursor: pointer;
+}
+
+    .node circle {
+        fill: #69b3a2;
+    }
+
+    .node text {
+        font: 12px sans-serif;
+    }

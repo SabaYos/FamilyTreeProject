@@ -1,0 +1,78 @@
+﻿@using static System.Net.WebRequestMethods
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inherits LayoutComponentBase
+
+@using MudBlazor
+
+<link href="/css/stylesheet.css" rel="stylesheet" />
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div class="main-layout">
+    <!-- Header Section -->
+    <header class="header">
+        <MudNavMenu Color="Color.Primary" Class="navbar">
+            <MudNavLink Href="#home" Match="NavLinkMatch.All" Class="logo-nav">
+                <div class="logo-container">
+                    <img src="Images/Logo.png" alt="Logo" class="logo" />
+                </div>
+            </MudNavLink>
+            <div class="nav-links-container">
+                <MudNavLink Href="#about" Match="NavLinkMatch.Prefix">About</MudNavLink>
+                <MudNavLink Href="#features" Match="NavLinkMatch.Prefix">Features</MudNavLink>
+                <MudNavLink Href="#contact" Match="NavLinkMatch.Prefix">Contact</MudNavLink>
+                <MudNavLink Href="#home" Match="NavLinkMatch.Prefix">Home</MudNavLink>
+                <MudNavLink Href="/login" Target="_blank">Login</MudNavLink>
+                <MudNavLink OnClick="HandleLogout">Logout</MudNavLink>
+            </div>
+        </MudNavMenu>
+    </header>
+
+    <div class="content">
+        @Body
+    </div>
+
+    <!-- Footer Section -->
+    <footer class="footer">
+        <p>© 2025 Family Tree App. All rights reserved.</p>
+    </footer>
+</div>
+
+@code {
+    protected async Task HandleLogout()
+    {
+        try
+        {
+            var response = await Http.PostAsync("http://localhost:5043/api/auth/logout", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<LogoutResponse>();
+                Console.WriteLine(result.Message);
+
+                // Clear token if stored
+                await LocalStorage.RemoveItemAsync("jwtToken");
+
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                Console.Error.WriteLine("Logout failed");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Logout failed: {ex.Message}");
+        }
+    }
+
+    private class LogoutResponse
+    {
+        public string Message { get; set; }
+    }
+}

@@ -1,0 +1,108 @@
+﻿@page "/registration"
+@inject IHttpClientFactory HttpClientFactory
+@layout MainLayout
+@using MudBlazor
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using LoginAPI.Models
+<PageTitle>FamilyTree-NewUser</PageTitle>
+
+<div>
+    <link href="/css/Login.css" rel="stylesheet" />
+
+    <div class="background-container">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Register</h3>
+                <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                    <MudTextField T="string" Label="Username" Required="true" RequiredError="User name is required!" @bind-Value="registrationModel.UserName" Variant="Variant.Outlined" />
+                    <MudTextField T="string" Label="Email" Required="true" RequiredError="Email is required!" @bind-Value="registrationModel.Email" Validation="@(new EmailAddressAttribute() { ErrorMessage = "The email address is invalid" })" Variant="Variant.Outlined" />
+                    <MudTextField T="string" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password"
+                    Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" Required="true"
+                    RequiredError="Password is required!" @bind-Value="registrationModel.Password" Variant="Variant.Outlined" />
+                    <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password"
+                    @bind-Value="ConfirmPassword" Validation="@(new Func<string, string>(PasswordMatch))" Variant="Variant.Outlined" />
+                    <button type="button" class="btn" @onclick="SubmitRegistration">Create</button>
+                </MudForm>
+                @if (!string.IsNullOrEmpty(Message))
+                {
+                    <MudAlert Severity="@(success ? Severity.Success : Severity.Error)" Class="mt-3">@Message</MudAlert>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegistrationDto registrationModel = new RegistrationDto();
+    private string ConfirmPassword { get; set; }
+    private string Message { get; set; }
+    private bool success;
+    private string[] errors = { };
+    private MudTextField<string> pwField1;
+    private MudForm form;
+
+    private IEnumerable<string> PasswordStrength(string pw)
+    {
+        if (string.IsNullOrWhiteSpace(pw))
+        {
+            yield return "Password is required!";
+            yield break;
+        }
+        if (pw.Length < 8)
+            yield return "Password must be at least of length 8";
+        if (!Regex.IsMatch(pw, @"[A-Z]"))
+            yield return "Password must contain at least one capital letter";
+        if (!Regex.IsMatch(pw, @"[a-z]"))
+            yield return "Password must contain at least one lowercase letter";
+        if (!Regex.IsMatch(pw, @"[0-9]"))
+            yield return "Password must contain at least one digit";
+    }
+
+    private string PasswordMatch(string arg)
+    {
+        if (pwField1.Value != arg)
+            return "Passwords don't match";
+        return null;
+    }
+
+    private async Task SubmitRegistration()
+    {
+        // Validate the form
+        await form.Validate();
+        if (!success)
+        {
+            Message = "Please fix the errors in the form.";
+            return;
+        }
+
+        try
+        {
+            registrationModel.Id = "null";
+            var client = HttpClientFactory.CreateClient("LoginAPI");
+            var response = await client.PostAsJsonAsync("auth/register", registrationModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                success = true;
+                Message = "Registration successful! You can now log in.";
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                success = false;
+                Message = "Invalid input data. Please check your details and try again.";
+            }
+            else
+            {
+                success = false;
+                Message = $"Registration failed with status: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            success = false;
+            Message = $"Failed to fetch: {ex.Message}. Check CORS configuration or network issues.";
+            Console.WriteLine($"Error details: {ex}");
+        }
+    }
+}

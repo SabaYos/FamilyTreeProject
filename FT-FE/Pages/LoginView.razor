@@ -1,0 +1,84 @@
+﻿@using LoginAPI.Models
+@page "/login"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+@layout MainLayout
+@using MudBlazor
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+<PageTitle>FamilyTree - Login</PageTitle>
+
+<div class="background-container">
+    <link href="/css/Login.css" rel="stylesheet" />
+
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title">Login</h3>
+            <p class="card-text">Sign in to continue</p>
+
+            <form>
+                <MudTextField T="string" Label="Email" Required="true" RequiredError="Email is required!" @bind-value="loginModel.Email" Validation="@(new EmailAddressAttribute() {ErrorMessage = "The email address is invalid"})" Variant="Variant.Outlined" />
+                <MudTextField T="string" Label="Password" HelperText="Enter your pass" InputType="InputType.Password" Required="true"
+                              RequiredError="Password is required!" @bind-value="loginModel.Password" Variant="Variant.Outlined" />
+                <button type="button" class="btn" @onclick="HandleSubmit">Log in</button>
+            </form>
+
+            <div>
+                <a href="/Registration">New User? Register here</a>
+            </div>
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-3">@ErrorMessage</MudAlert>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginDto loginModel = new LoginDto();
+    private string ErrorMessage { get; set; }
+    private bool IsLoading { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("LoginAPI");
+            var response = await client.PostAsJsonAsync("auth/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Log the raw response body
+                var rawResponse = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Raw response: {rawResponse}");
+
+                var result = await response.Content.ReadFromJsonAsync<Response>();
+                await LocalStorage.SetItemAsync("jwtToken", result.Token);
+                NavigationManager.NavigateTo("/familytreeview");
+
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                ErrorMessage = "Invalid username or password.";
+            }
+            else
+            {
+                ErrorMessage = $"Login failed with status: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to fetch: {ex.Message}. Likely a CORS issue or network error. Check the browser's Console and Network tabs for details.";
+            Console.WriteLine($"Error details: {ex}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

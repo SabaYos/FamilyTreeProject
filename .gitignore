@@ -1,0 +1,34 @@
+# .NET Core build output
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+
+# Database files (if any local DB files exist)
+*.db
+*.sqlite
+
+# Configuration files with secrets
+appsettings.Development.json
+appsettings.Staging.json
+appsettings.Production.json
+secrets.json
+.env
+
+# Migration backups (optional, keep migrations in code)
+Migrations/*.bak
+
+# IDE-specific files
+.vs/
+.vscode/
+
+# NuGet packages
+packages/
+
+# Test results
+TestResults/
+
+# Solution-specific files
+*.sln.docstates

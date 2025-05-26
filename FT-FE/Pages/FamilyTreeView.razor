@@ -1,0 +1,668 @@
+﻿@page "/familytreeview"
+
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@layout MainLayout
+@using MudBlazor
+@using SharedModels
+@using FamilyTreeAPI.Models
+@using LoginAPI.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Net.Http.Headers
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@using System.Security.Claims
+
+<PageTitle>FamilyTree - View Trees</PageTitle>
+
+<div class="background-container">
+    <MudGrid>
+        <!-- User Info Section -->
+        <MudItem xs="12" md="6" Class="background-container">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.h5">User Info</MudText>
+                    <MudTextField Label="Username" @bind-Value="Username" Variant="Variant.Outlined" />
+                    <MudTextField Label="Email" @bind-Value="Email" Variant="Variant.Outlined" Disabled="true" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="UpdateUserInfo" Disabled="@isSubmitting">Save Changes</MudButton>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Change Password Section -->
+        <MudItem xs="12" md="6" Class="background-container">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.h5">Change Password</MudText>
+                    <MudTextField Label="Current Password" InputType="InputType.Password" Required="true"
+                    RequiredError="Password is required!" @bind-Value="CurrentPassword" Variant="Variant.Outlined" />
+                    <MudTextField Label="New Password" InputType="InputType.Password" Required="true"
+                    RequiredError="Password is required!" @bind-Value="NewPassword" Variant="Variant.Outlined" />
+                    <MudTextField Label="Confirm Password" InputType="InputType.Password" Required="true"
+                    RequiredError="Password is required!" @bind-Value="ConfirmPassword" Variant="Variant.Outlined" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="ChangePassword" Disabled="@isSubmitting">Save Changes</MudButton>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <!-- User Trees & Roles Section -->
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title">Family Trees</h3>
+            <p class="card-text">Manage your family trees.</p>
+            @if (ErrorMessage != null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@ErrorMessage</MudAlert>
+            }
+
+            @if (showAddTreeForm)
+            {
+                <MudCard Class="mb-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Add Family Tree</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudForm @ref="treeForm" @bind-IsValid="@formSuccess">
+                            <MudTextField T="string" Label="Name" Required="true" @bind-Value="newTree.FamilyTreeName" Variant="Variant.Outlined" Class="mb-3" />
+                            <MudSwitch T="bool" @bind-Checked="newTree.IsPublic" Label="Public Tree" Color="Color.Primary" />
+                        </MudForm>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddFamilyTree" Disabled="@(!formSuccess || isSubmitting)">Save</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CancelAdd" Class="ml-2">Cancel</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            }
+            else if (showEditTreeForm)
+            {
+                <MudCard Class="mb-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Edit Family Tree</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudForm @ref="editTreeForm" @bind-IsValid="@editFormSuccess">
+                            <MudTextField T="string" Label="Name" Required="true" @bind-Value="treeToEdit.FamilyTreeName" Variant="Variant.Outlined" Class="mb-3" />
+                            <MudSwitch T="bool" @bind-Checked="treeToEdit.IsPublic" Label="Public Tree" Color="Color.Primary" />
+                        </MudForm>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateFamilyTree" Disabled="@(!editFormSuccess || isSubmitting)">Save</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CancelEdit" Class="ml-2">Cancel</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="@(() => ShowAddTreeForm())" Disabled="@isSubmitting">Add Family Tree</MudButton>
+            }
+
+            <MudGrid Class="mt-3">
+                <MudItem xs="12">
+                    @if (familyTrees == null)
+                    {
+                        <p>Loading...</p>
+                    }
+                    else if (!familyTrees.Any())
+                    {
+                        <p>No family trees found. Create one to get started!</p>
+                    }
+                    else
+                    {
+                        <MudTable @key="@familyTrees.Count" Items="@familyTrees" Hover="true" Striped="true" Class="family-tree-table">
+                            <HeaderContent>
+                                <MudTh>Name</MudTh>
+                                <MudTh>Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Name">@context.FamilyTreeName</MudTd>
+                                <MudTd DataLabel="Actions">
+                                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo($"/familytree/{context.FamilyTreeId}/members"))">Manage Members</MudButton>
+                                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => ShowEditTreeForm(context))" Disabled="@(isSubmitting || context.Role != "Admin")">Edit</MudButton>
+                                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => GenerateInvite(context.FamilyTreeId))" Disabled="@(isSubmitting || context.Role != "Admin")">Invite Link</MudButton>
+                                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => NavigationManager.NavigateTo($"/familytree/{context.FamilyTreeId}/delete"))" Disabled="@(isSubmitting || context.Role != "Admin")">Delete</MudButton>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                </MudItem>
+            </MudGrid>
+
+            <!-- Invite URL Dialog -->
+            @if (!string.IsNullOrEmpty(inviteUrl))
+            {
+                <MudDialog @bind-Visible="showInviteDialog">
+                    <DialogContent>
+                        <MudText Typo="Typo.h6">Invite URL Generated</MudText>
+                        <MudTextField T="string" Label="Invite Link" Value="@inviteUrl" ReadOnly="true" Variant="Variant.Outlined" FullWidth="true" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CopyToClipboard" Class="mt-3">Copy to Clipboard</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseInviteDialog" Class="mt-3">Close</MudButton>
+                    </DialogContent>
+                </MudDialog>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<FamilyTreeDto> familyTrees;
+    private FamilyTreeDto newTree = new FamilyTreeDto();
+    private FamilyTreeDto treeToEdit;
+    private bool showAddTreeForm;
+    private bool showEditTreeForm;
+    private bool formSuccess;
+    private bool editFormSuccess;
+    private MudForm treeForm;
+    private MudForm editTreeForm;
+    private string ErrorMessage;
+    private string token;
+    private bool isLoading;
+    private bool isSubmitting;
+
+    private string inviteUrl;
+    private bool showInviteDialog;
+
+    private const string ApiEndpoint = "familytrees";
+    private const string UserApiEndpoint = "user";
+    private const string AuthScheme = "Bearer";
+
+    private string Username { get; set; }
+    private string Email { get; set; }
+    private string CurrentPassword { get; set; } = string.Empty;
+    private string NewPassword { get; set; } = string.Empty;
+    private string ConfirmPassword { get; set; } = string.Empty;
+
+    private string UserRole { get; set; } // Track the user's global role, though not used for per-tree permissions
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (!user?.Identity?.IsAuthenticated ?? true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        token = await LocalStorage.GetItemAsync<string>("jwtToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            ErrorMessage = "No valid token found. Please log in again.";
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        await LoadUserProfile();
+        await LoadFamilyTrees();
+        UserRole = user.IsInRole("Family Member") ? "Family Member" : "Admin";
+    }
+
+    private async Task LoadUserProfile()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("LoginAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, token);
+
+            var response = await client.GetAsync($"{UserApiEndpoint}/profile");
+            if (response.IsSuccessStatusCode)
+            {
+                var profile = await response.Content.ReadFromJsonAsync<UserProfileDto>();
+                Username = profile.UserName;
+                Email = profile.Email;
+            }
+            else
+            {
+                ErrorMessage = await HandleApiError(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading user profile: {ex.Message}";
+        }
+    }
+
+    private async Task UpdateUserInfo()
+    {
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("LoginAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, token);
+
+            var response = await client.PutAsJsonAsync($"{UserApiEndpoint}/update-username", Username);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = await HandleApiError(response);
+            }
+            else
+            {
+                ErrorMessage = "Username updated successfully.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error updating user info: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        if (NewPassword != ConfirmPassword)
+        {
+            ErrorMessage = "New password and confirmation do not match.";
+            return;
+        }
+
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("LoginAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, token);
+
+            var model = new ChangePasswordModel
+            {
+                CurrentPassword = CurrentPassword,
+                NewPassword = NewPassword
+            };
+
+            var response = await client.PutAsJsonAsync($"{UserApiEndpoint}/change-password", model);
+            if (response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "Password changed successfully.";
+                CurrentPassword = string.Empty;
+                NewPassword = string.Empty;
+                ConfirmPassword = string.Empty;
+            }
+            else
+            {
+                ErrorMessage = await HandleApiError(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error changing password: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GenerateInvite(int familyTreeId)
+    {
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, token);
+
+            var response = await client.PostAsync($"Invite/familytree/{familyTreeId}/generate-invite", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<InviteResponse>();
+                inviteUrl = result.InviteUrl;
+                showInviteDialog = true;
+            }
+            else
+            {
+                ErrorMessage = await HandleApiError(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error generating invite: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CopyToClipboard()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", inviteUrl);
+        ErrorMessage = "Invite URL copied to clipboard!";
+        await Task.Delay(2000); // Show message for 2 seconds
+        ErrorMessage = null;
+    }
+
+    private void CloseInviteDialog()
+    {
+        showInviteDialog = false;
+        inviteUrl = null;
+        StateHasChanged();
+    }
+
+    private async Task LoadFamilyTrees()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, token);
+
+            var response = await client.GetAsync($"{ApiEndpoint}/user-roles");
+            if (response.IsSuccessStatusCode)
+            {
+                var userTrees = await response.Content.ReadFromJsonAsync<List<FamilyTreeUserRole>>();
+                familyTrees = userTrees?.Select(ut => new FamilyTreeDto
+                {
+                    FamilyTreeId = ut.FamilyTreeId,
+                    FamilyTreeName = ut.FamilyTreeName,
+                    IsPublic = false, // Default value since FamilyTreeUserRole doesn't provide it
+                    OwnerId = "", // Default value, can be set via API if needed
+                    Role = ut.Role ?? "Admin" // Default to Admin if Role is null (e.g., owner)
+                }).ToList() ?? new List<FamilyTreeDto>();
+
+                Console.WriteLine($"Loaded {familyTrees.Count} family trees for the user.");
+            }
+            else
+            {
+                ErrorMessage = await HandleApiError(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading family trees: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RemoveAccess(int treeId)
+    {
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, token);
+
+            var response = await client.DeleteAsync($"{ApiEndpoint}/user-roles/{treeId}");
+            if (response.IsSuccessStatusCode)
+            {
+                familyTrees.RemoveAll(t => t.FamilyTreeId == treeId);
+                await LoadFamilyTrees(); // Refresh family trees to reflect updated access
+            }
+            else
+            {
+                ErrorMessage = await HandleApiError(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error removing access: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<string> HandleApiError(HttpResponseMessage response)
+    {
+        return response.StatusCode switch
+        {
+            System.Net.HttpStatusCode.Unauthorized => "Session expired. Please log in again.",
+            System.Net.HttpStatusCode.NotFound => "Resource not found.",
+            System.Net.HttpStatusCode.BadRequest => await response.Content.ReadAsStringAsync(),
+            _ => $"Failed to process request: {response.StatusCode}"
+        };
+    }
+
+    private void ShowAddTreeForm()
+    {
+        newTree = new FamilyTreeDto
+        {
+            Role = "Admin" // Set default role for new tree
+        };
+        showAddTreeForm = true;
+    }
+
+    private async Task AddFamilyTree()
+    {
+        await treeForm.Validate();
+        if (!formSuccess) return;
+
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, token);
+
+            // Step 1: Create the new family tree
+            var treeResponse = await client.PostAsJsonAsync(ApiEndpoint, newTree);
+            if (!treeResponse.IsSuccessStatusCode)
+            {
+                ErrorMessage = await HandleApiError(treeResponse);
+                Console.WriteLine($"AddFamilyTree Error: {ErrorMessage}");
+                return;
+            }
+
+            var addedTree = await treeResponse.Content.ReadFromJsonAsync<FamilyTreeDto>();
+            familyTrees.Add(addedTree);
+
+            // Step 2: Get the current user's ID from authentication state, matching server approach
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            Console.WriteLine($"UserId from Claims (NameIdentifier): {userId ?? "null"}");
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                Console.WriteLine("UserId not found in NameIdentifier. Attempting to parse from token.");
+                // Fallback to token parsing
+                token = await LocalStorage.GetItemAsync<string>("jwtToken");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    try
+                    {
+                        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                        var jwtToken = handler.ReadJwtToken(token);
+                        userId = jwtToken.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value
+                               ?? jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+                        Console.WriteLine($"UserId from Token: {userId ?? "null"}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error parsing token: {ex.Message}");
+                    }
+                }
+                if (string.IsNullOrEmpty(userId))
+                {
+                    ErrorMessage = "Could not determine user ID.";
+                    return;
+                }
+            }
+
+            // Step 3: Create a FamilyTreeUserRole entry for the owner as Admin
+            var userRole = new FamilyTreeUserRole
+                {
+                    FamilyTreeId = addedTree.FamilyTreeId,
+                    UserId = userId,
+                    Role = "Admin",
+                    FamilyTreeName = addedTree.FamilyTreeName
+                };
+
+            var roleResponse = await client.PostAsJsonAsync($"{ApiEndpoint}/user-roles", userRole);
+            if (!roleResponse.IsSuccessStatusCode)
+            {
+                ErrorMessage = await HandleApiError(roleResponse);
+                Console.WriteLine($"AddFamilyTreeUserRole Error: {ErrorMessage}");
+                return;
+            }
+
+            // Step 4: Refresh the family trees to reflect the new role
+            showAddTreeForm = false;
+            ErrorMessage = null;
+            await LoadFamilyTrees(); // Refresh user trees to include new tree and role
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error adding tree: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelAdd()
+    {
+        showAddTreeForm = false;
+        newTree = new FamilyTreeDto
+        {
+            Role = "Admin" // Reset with default role
+        };
+        ErrorMessage = null;
+    }
+
+    private void ShowEditTreeForm(FamilyTreeDto tree)
+    {
+        Console.WriteLine($"Edit clicked for tree ID: {tree.FamilyTreeId}, Role: {tree.Role}");
+        treeToEdit = new FamilyTreeDto
+        {
+            FamilyTreeId = tree.FamilyTreeId,
+            FamilyTreeName = tree.FamilyTreeName,
+            IsPublic = tree.IsPublic,
+            OwnerId = tree.OwnerId,
+            Role = tree.Role
+        };
+        showEditTreeForm = true;
+        StateHasChanged(); // Ensure UI updates
+    }
+
+    private async Task UpdateFamilyTree()
+    {
+        await editTreeForm.Validate();
+        if (!editFormSuccess) return;
+
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, token);
+
+            var response = await client.PutAsJsonAsync($"{ApiEndpoint}/{treeToEdit.FamilyTreeId}", treeToEdit);
+            if (response.IsSuccessStatusCode)
+            {
+                var updatedTree = await response.Content.ReadFromJsonAsync<FamilyTreeDto>();
+                var index = familyTrees.FindIndex(t => t.FamilyTreeId == updatedTree.FamilyTreeId);
+                if (index != -1)
+                {
+                    updatedTree.Role = treeToEdit.Role; // Preserve role
+                    familyTrees[index] = updatedTree;
+                }
+                showEditTreeForm = false;
+                ErrorMessage = null;
+            }
+            else
+            {
+                ErrorMessage = await HandleApiError(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error updating tree: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelEdit()
+    {
+        showEditTreeForm = false;
+        treeToEdit = null;
+        ErrorMessage = null;
+    }
+
+    private async Task DeleteFamilyTree(int id)
+    {
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(AuthScheme, token);
+
+            var response = await client.DeleteAsync($"{ApiEndpoint}/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                familyTrees.RemoveAll(t => t.FamilyTreeId == id);
+                ErrorMessage = null;
+            }
+            else
+            {
+                ErrorMessage = await HandleApiError(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error deleting tree: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool IsDisabled(FamilyTreeDto tree)
+    {
+        return isSubmitting || tree.Role != "Admin";
+    }  
+
+    public class InviteResponse
+    {
+        public string InviteUrl { get; set; }
+    }
+
+    public class UserProfileDto
+    {
+        public string UserName { get; set; }
+        public string Email { get; set; }
+    }
+
+    public class ChangePasswordModel
+    {
+        public string CurrentPassword { get; set; }
+        public string NewPassword { get; set; }
+    }
+}

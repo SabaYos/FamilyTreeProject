@@ -1,0 +1,6 @@
+@FamilyTreebe_HostAddress = http://localhost:5043
+
+GET {{FamilyTreebe_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
