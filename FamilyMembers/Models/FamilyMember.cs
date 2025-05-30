@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using LoginAPI.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace FamilyTreeAPI.Models
 {
@@ -35,7 +36,7 @@ namespace FamilyTreeAPI.Models
         public ICollection<FamilyMember> ChildrenAsFather { get; set; } = new List<FamilyMember>();
         public ICollection<Relationship> RelationshipsAsFromPerson { get; set; } = new List<Relationship>();
         public ICollection<Relationship> RelationshipsAsToPerson { get; set; } = new List<Relationship>();
-         
+
     }
 
 

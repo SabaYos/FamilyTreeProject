@@ -15,141 +15,131 @@
 @inject IJSRuntime JSRuntime
 @using System.Security.Claims
 
+<link href="/css/dashboard.css" rel="stylesheet" />
 <PageTitle>FamilyTree - View Trees</PageTitle>
 
-<div class="background-container">
-    <MudGrid>
-        <!-- User Info Section -->
-        <MudItem xs="12" md="6" Class="background-container">
-            <MudCard>
-                <MudCardContent>
-                    <MudText Typo="Typo.h5">User Info</MudText>
-                    <MudTextField Label="Username" @bind-Value="Username" Variant="Variant.Outlined" />
-                    <MudTextField Label="Email" @bind-Value="Email" Variant="Variant.Outlined" Disabled="true" />
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="UpdateUserInfo" Disabled="@isSubmitting">Save Changes</MudButton>
-                </MudCardContent>
-            </MudCard>
+<div class="background-container" style="display: flex; gap: 2rem; flex-direction:row;" >
+    <!-- User Info Section  -->
+    <div class="info" style="flex: 1; width:100%; margin:0.5rem; padding:0.5rem;">
+        <MudItem xs="12" md="6" Style="min-width:100%;">
+            <div style="width:100%; margin:0.5rem; padding:0.5rem;">
+                <MudText Typo="Typo.h5" Class="card-title">User Info</MudText>
+                <MudTextField Class="form-field" Label="Username" @bind-Value="Username" Variant="Variant.Outlined" />
+                <MudTextField Class="form-field" Label="Email" @bind-Value="Email" Variant="Variant.Outlined" Disabled="true" />
+                <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateUserInfo" Disabled="@isSubmitting">Save Changes</MudButton>
+            </div>
         </MudItem>
 
-        <!-- Change Password Section -->
-        <MudItem xs="12" md="6" Class="background-container">
-            <MudCard>
-                <MudCardContent>
-                    <MudText Typo="Typo.h5">Change Password</MudText>
-                    <MudTextField Label="Current Password" InputType="InputType.Password" Required="true"
-                    RequiredError="Password is required!" @bind-Value="CurrentPassword" Variant="Variant.Outlined" />
-                    <MudTextField Label="New Password" InputType="InputType.Password" Required="true"
-                    RequiredError="Password is required!" @bind-Value="NewPassword" Variant="Variant.Outlined" />
-                    <MudTextField Label="Confirm Password" InputType="InputType.Password" Required="true"
-                    RequiredError="Password is required!" @bind-Value="ConfirmPassword" Variant="Variant.Outlined" />
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="ChangePassword" Disabled="@isSubmitting">Save Changes</MudButton>
-                </MudCardContent>
-            </MudCard>
+        <!-- Change Password Section-->
+        <MudItem xs="12" md="6" Style="min-width:100%;">
+            <div style="width:100%; margin:0.5rem; padding:0.5rem;">
+                <MudText Typo="Typo.h5" Class="card-title">Change Password</MudText>
+                <MudTextField Class="form-field" Label="Current Password" InputType="InputType.Password" @bind-Value="CurrentPassword" Required="true" RequiredError="Password is required!" Variant="Variant.Outlined" />
+                <MudTextField Class="form-field" Label="New Password" InputType="InputType.Password" @bind-Value="NewPassword" Required="true" RequiredError="Password is required!" Variant="Variant.Outlined" />
+                <MudTextField Class="form-field" Label="Confirm Password" InputType="InputType.Password" @bind-Value="ConfirmPassword" Required="true" RequiredError="Password is required!" Variant="Variant.Outlined" />
+                <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" OnClick="ChangePassword" Disabled="@isSubmitting">Save Changes</MudButton>
+            </div>          
         </MudItem>
-    </MudGrid>
-
+    </div>
     <!-- User Trees & Roles Section -->
-    <div class="card">
-        <div class="card-body">
-            <h3 class="card-title">Family Trees</h3>
-            <p class="card-text">Manage your family trees.</p>
-            @if (ErrorMessage != null)
-            {
-                <MudAlert Severity="Severity.Error" Class="mb-4">@ErrorMessage</MudAlert>
-            }
+    <div class="tree" style="flex: 2;" >
+        <h3 class="card-title">Family Trees</h3>
+        <p class="card-text">Manage your family trees.</p>
+        @if (ErrorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@ErrorMessage</MudAlert>
+        }
 
-            @if (showAddTreeForm)
-            {
-                <MudCard Class="mb-4">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h6">Add Family Tree</MudText>
-                        </CardHeaderContent>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudForm @ref="treeForm" @bind-IsValid="@formSuccess">
-                            <MudTextField T="string" Label="Name" Required="true" @bind-Value="newTree.FamilyTreeName" Variant="Variant.Outlined" Class="mb-3" />
-                            <MudSwitch T="bool" @bind-Checked="newTree.IsPublic" Label="Public Tree" Color="Color.Primary" />
-                        </MudForm>
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddFamilyTree" Disabled="@(!formSuccess || isSubmitting)">Save</MudButton>
-                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CancelAdd" Class="ml-2">Cancel</MudButton>
-                    </MudCardActions>
-                </MudCard>
-            }
-            else if (showEditTreeForm)
-            {
-                <MudCard Class="mb-4">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h6">Edit Family Tree</MudText>
-                        </CardHeaderContent>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudForm @ref="editTreeForm" @bind-IsValid="@editFormSuccess">
-                            <MudTextField T="string" Label="Name" Required="true" @bind-Value="treeToEdit.FamilyTreeName" Variant="Variant.Outlined" Class="mb-3" />
-                            <MudSwitch T="bool" @bind-Checked="treeToEdit.IsPublic" Label="Public Tree" Color="Color.Primary" />
-                        </MudForm>
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateFamilyTree" Disabled="@(!editFormSuccess || isSubmitting)">Save</MudButton>
-                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CancelEdit" Class="ml-2">Cancel</MudButton>
-                    </MudCardActions>
-                </MudCard>
-            }
-            else
-            {
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="@(() => ShowAddTreeForm())" Disabled="@isSubmitting">Add Family Tree</MudButton>
-            }
+        @if (showAddTreeForm)
+        {
+            <MudCard Class="mb-4">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Add Family Tree</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudForm @ref="treeForm" @bind-IsValid="@formSuccess">
+                        <MudTextField T="string" Label="Name" Required="true" @bind-Value="newTree.FamilyTreeName" Variant="Variant.Outlined" Class="mb-3" />
+                        <MudSwitch T="bool" @bind-Checked="newTree.IsPublic" Label="Public Tree" Color="Color.Primary" />
+                    </MudForm>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddFamilyTree" Disabled="@(!formSuccess || isSubmitting)">Save</MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CancelAdd" Class="ml-2">Cancel</MudButton>
+                </MudCardActions>
+            </MudCard>
+        }
+        else if (showEditTreeForm)
+        {
+            <MudCard Class="mb-4">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Edit Family Tree</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudForm @ref="editTreeForm" @bind-IsValid="@editFormSuccess">
+                        <MudTextField T="string" Label="Name" Required="true" @bind-Value="treeToEdit.FamilyTreeName" Variant="Variant.Outlined" Class="mb-3" />
+                        <MudSwitch T="bool" @bind-Checked="treeToEdit.IsPublic" Label="Public Tree" Color="Color.Primary" />
+                    </MudForm>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateFamilyTree" Disabled="@(!editFormSuccess || isSubmitting)">Save</MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CancelEdit" Class="ml-2">Cancel</MudButton>
+                </MudCardActions>
+            </MudCard>
+        }
+        else
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="@(() => ShowAddTreeForm())" Disabled="@isSubmitting">Add Family Tree</MudButton>
+        }
 
-            <MudGrid Class="mt-3">
-                <MudItem xs="12">
-                    @if (familyTrees == null)
-                    {
-                        <p>Loading...</p>
-                    }
-                    else if (!familyTrees.Any())
-                    {
-                        <p>No family trees found. Create one to get started!</p>
-                    }
-                    else
-                    {
-                        <MudTable @key="@familyTrees.Count" Items="@familyTrees" Hover="true" Striped="true" Class="family-tree-table">
-                            <HeaderContent>
-                                <MudTh>Name</MudTh>
-                                <MudTh>Actions</MudTh>
-                            </HeaderContent>
-                            <RowTemplate>
-                                <MudTd DataLabel="Name">@context.FamilyTreeName</MudTd>
-                                <MudTd DataLabel="Actions">
-                                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo($"/familytree/{context.FamilyTreeId}/members"))">Manage Members</MudButton>
-                                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => ShowEditTreeForm(context))" Disabled="@(isSubmitting || context.Role != "Admin")">Edit</MudButton>
-                                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => GenerateInvite(context.FamilyTreeId))" Disabled="@(isSubmitting || context.Role != "Admin")">Invite Link</MudButton>
-                                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => NavigationManager.NavigateTo($"/familytree/{context.FamilyTreeId}/delete"))" Disabled="@(isSubmitting || context.Role != "Admin")">Delete</MudButton>
-                                </MudTd>
-                            </RowTemplate>
-                        </MudTable>
-                    }
-                </MudItem>
-            </MudGrid>
+        <MudGrid Class="mt-3">
+            <MudItem xs="12">
+                @if (familyTrees == null)
+                {
+                    <p>Loading...</p>
+                }
+                else if (!familyTrees.Any())
+                {
+                    <p>No family trees found. Create one to get started!</p>
+                }
+                else
+                {
+                    <MudTable @key="@familyTrees.Count" Items="@familyTrees" Hover="true" Striped="true" Class="family-tree-table">
+                        <HeaderContent>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Name">@context.FamilyTreeName</MudTd>
+                            <MudTd DataLabel="Actions">
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo($"/familytree/{context.FamilyTreeId}/members"))">Manage Members</MudButton>
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => ShowEditTreeForm(context))" Disabled="@(isSubmitting || context.Role != "Admin")">Edit</MudButton>
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => GenerateInvite(context.FamilyTreeId))" Disabled="@(isSubmitting || context.Role != "Admin")">Invite Link</MudButton>
+                                <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@(() => NavigationManager.NavigateTo($"/familytree/{context.FamilyTreeId}/delete"))" Disabled="@(isSubmitting || context.Role != "Admin")">Delete</MudButton>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudItem>
+        </MudGrid>
 
-            <!-- Invite URL Dialog -->
-            @if (!string.IsNullOrEmpty(inviteUrl))
-            {
-                <MudDialog @bind-Visible="showInviteDialog">
-                    <DialogContent>
-                        <MudText Typo="Typo.h6">Invite URL Generated</MudText>
-                        <MudTextField T="string" Label="Invite Link" Value="@inviteUrl" ReadOnly="true" Variant="Variant.Outlined" FullWidth="true" />
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CopyToClipboard" Class="mt-3">Copy to Clipboard</MudButton>
-                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseInviteDialog" Class="mt-3">Close</MudButton>
-                    </DialogContent>
-                </MudDialog>
-            }
-        </div>
+        <!-- Invite URL Dialog -->
+        @if (!string.IsNullOrEmpty(inviteUrl))
+        {
+            <MudDialog @bind-Visible="showInviteDialog">
+                <DialogContent>
+                    <MudText Typo="Typo.h6">Invite URL Generated</MudText>
+                    <MudTextField T="string" Label="Invite Link" Value="@inviteUrl" ReadOnly="true" Variant="Variant.Outlined" FullWidth="true" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CopyToClipboard" Class="mt-3">Copy to Clipboard</MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseInviteDialog" Class="mt-3">Close</MudButton>
+                </DialogContent>
+            </MudDialog>
+        }
     </div>
 </div>
-
 @code {
     private List<FamilyTreeDto> familyTrees;
     private FamilyTreeDto newTree = new FamilyTreeDto();

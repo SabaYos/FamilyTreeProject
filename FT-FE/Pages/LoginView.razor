@@ -18,9 +18,9 @@
             <p class="card-text">Sign in to continue</p>
 
             <form>
-                <MudTextField T="string" Label="Email" Required="true" RequiredError="Email is required!" @bind-value="loginModel.Email" Validation="@(new EmailAddressAttribute() {ErrorMessage = "The email address is invalid"})" Variant="Variant.Outlined" />
+                <MudTextField T="string" Label="Email or Username" Required="true" RequiredError="Email or username is required!" @bind-value="loginModel.Email" Variant="Variant.Outlined" Class="form-item" />
                 <MudTextField T="string" Label="Password" HelperText="Enter your pass" InputType="InputType.Password" Required="true"
-                              RequiredError="Password is required!" @bind-value="loginModel.Password" Variant="Variant.Outlined" />
+                              RequiredError="Password is required!" @bind-value="loginModel.Password" Variant="Variant.Outlined" Class="form-item" />
                 <button type="button" class="btn" @onclick="HandleSubmit">Log in</button>
             </form>
 

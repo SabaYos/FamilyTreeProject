@@ -3,46 +3,43 @@
     background-color: white;
     background-image: url('../images/logo.png');
     background-size: contain;
-    background-position: center;
+    background-position: left;
     background-repeat: no-repeat;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display:flex ;
+    justify-content:center;
+    align-items:end;
     margin: 0;
-    padding: 10px;
+    padding: 3rem;
 }
 
 /* Login card styling */
 .card {
     border-radius: 40px;
     border: none;
-    background-color: rgba(255, 255, 255, 0.75); /* Slight transparency */
     overflow: hidden;
-    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2); /* Soft shadow */
     text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem; 
-    width: 500px;
+    display: block;
+    padding: 2rem;
     height: 100%;
+    width: 35%;
 }
 
-
-.form-item{
-    padding:0.5rem;
+.card-body {
+    padding: 2rem;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    height: 100%;
+    border-width: medium;
+    width:100%;
 }
-
 
 /* Form input fields */
 .form-control {
     border-radius: 20px;
-    border: 2px solid rgba(14, 65, 88, 0.3); /* Consistent border */
     padding: 0.75rem;
     font-size: 1rem;
-    background-color: rgba(255, 255, 255, 0.9); /* Consistent background */
     color: #0e4158;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Soft shadow */
     transition: all 0.3s ease-in-out;
 }
 
@@ -53,11 +50,6 @@
         box-shadow: 0 0 8px rgba(14, 65, 88, 0.5); /* Glow effect */
     }
 
-
-a {
-    padding:0.3rem;
-    text-decoration: none;
-}
 
 
 /* Button styling */
@@ -85,6 +77,7 @@ a {
     text-decoration: none;
     font-size: 0.9rem;
     transition: color 0.2s;
+    padding: 0.5rem;
 }
 
 .p{

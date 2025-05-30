@@ -16,7 +16,8 @@ namespace FamilyTreeAPI.Models
         public DateTime ExpirationDate { get; set; }
         [Required]
         public bool IsUsed { get; set; }
+
         public string? RecipientEmail { get; set; }
-      //  public FamilyTree FamilyTree { get; set; }
+      
     }
 }

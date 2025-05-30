@@ -35,7 +35,8 @@ namespace FamilyTreeAPI.Controllers
                     {
                         Relationship = r,
                         FromPerson = r.FromPerson,
-                        FamilyTreeId = r.FromPerson.FamilyTreeId
+                        FamilyTreeId = r.FromPerson.FamilyTreeId,
+                        CreatedBy = r.CreatedBy
                     })
                     .FirstOrDefaultAsync();
 
@@ -53,7 +54,8 @@ namespace FamilyTreeAPI.Controllers
                     ToPersonId = relationship.Relationship.ToPersonId,
                     RelationshipType = relationship.Relationship.RelationshipType.ToString(),
                     StartDate = relationship.Relationship.StartDate,
-                    EndDate = relationship.Relationship.EndDate
+                    EndDate = relationship.Relationship.EndDate,
+                    CreatedBy =relationship.CreatedBy
                 });
             }
             catch (Exception ex)
@@ -87,7 +89,8 @@ namespace FamilyTreeAPI.Controllers
                         ToPersonId = r.ToPersonId,
                         RelationshipType = r.RelationshipType.ToString(),
                         StartDate = r.StartDate,
-                        EndDate = r.EndDate
+                        EndDate = r.EndDate,
+                        CreatedBy= r.CreatedBy
                     })
                     .ToListAsync();
 
@@ -186,7 +189,7 @@ namespace FamilyTreeAPI.Controllers
                     return Forbid("Viewer role cannot edit relationships.");
 
                 // For FamilyMember role, check if at least one of the current members was created by the user
-                if (role == "FamilyMember")
+                if (role == "Family Member")
                 {
                     var fromPersonCreatedBy = await _context.FamilyMembers
                         .Where(p => p.FamilyMemberId == relationship.FromPersonId)
@@ -210,23 +213,6 @@ namespace FamilyTreeAPI.Controllers
 
                 if (newFromPerson.FamilyTreeId != newToPerson.FamilyTreeId)
                     return BadRequest("Persons must belong to the same tree.");
-
-                // For FamilyMember role, also check if at least one of the new members is created by the user
-                if (role == "FamilyMember")
-                {
-                    var newFromPersonCreatedBy = await _context.FamilyMembers
-                        .Where(p => p.FamilyMemberId == dto.FromPersonId)
-                        .Select(p => p.CreatedBy)
-                        .FirstOrDefaultAsync();
-
-                    var newToPersonCreatedBy = await _context.FamilyMembers
-                        .Where(p => p.FamilyMemberId == dto.ToPersonId)
-                        .Select(p => p.CreatedBy)
-                        .FirstOrDefaultAsync();
-
-                    if (newFromPersonCreatedBy != userId && newToPersonCreatedBy != userId)
-                        return Forbid("FamilyMember role can only edit relationships to involve at least one member they created.");
-                }
 
                 if (await CreatesCycle(dto.FromPersonId, dto.ToPersonId, relationshipType, relationship.RelationshipId))
                     return BadRequest("This relationship would create a cycle in the family tree.");

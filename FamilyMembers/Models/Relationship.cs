@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using LoginAPI.Models;
 using SharedModels;
 
 namespace FamilyTreeAPI.Models
@@ -17,14 +18,16 @@ namespace FamilyTreeAPI.Models
         [Required]
         public RelationshipType RelationshipType { get; set; }
         [Required]
-
+     
+        public string CreatedBy { get; set; } // to track creator
+     
         public DateTime? StartDate { get; set; }
+      
         public DateTime? EndDate { get; set; }
 
         // Navigation properties
         public FamilyMember FromPerson { get; set; } = null!;
         public FamilyMember ToPerson { get; set; } = null!;
-        public string CreatedBy { get; set; } // to track creator
 
     }
 

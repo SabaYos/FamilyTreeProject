@@ -27,7 +27,7 @@ namespace FamilyTreeAPI
             {
                 entity.ToTable("FamilyTrees");
                 entity.HasKey(ft => ft.FamilyTreeId);
-                entity.Property(ft => ft.FamilyTreeId);  
+                entity.Property(ft => ft.FamilyTreeId);
                 entity.Property(ft => ft.FamilyTreeName).IsRequired().HasMaxLength(200);
                 entity.Property(ft => ft.IsPublic).IsRequired();
                 entity.Property(ft => ft.OwnerId).IsRequired().HasMaxLength(450);
@@ -55,7 +55,7 @@ namespace FamilyTreeAPI
                     .WithMany(p => p.ChildrenAsFather)
                     .HasForeignKey(p => p.FatherId)
                     .OnDelete(DeleteBehavior.NoAction);
-
+              
                 entity.HasIndex(p => p.MotherId);
                 entity.HasIndex(p => p.FatherId);
                 entity.HasIndex(p => p.FamilyTreeId);
@@ -106,7 +106,7 @@ namespace FamilyTreeAPI
                 entity.HasKey(fi => fi.Id);
                 entity.Property(fi => fi.Id).ValueGeneratedOnAdd();
                 entity.Property(fi => fi.Token).IsRequired().HasMaxLength(450);
-                entity.Property(fi => fi.FamilyTreeId).IsRequired(); 
+                entity.Property(fi => fi.FamilyTreeId).IsRequired();
                 entity.Property(fi => fi.Role).IsRequired().HasMaxLength(50);
                 entity.Property(fi => fi.ExpirationDate).IsRequired();
                 entity.Property(fi => fi.IsUsed).IsRequired();
