@@ -1,4 +1,4 @@
-﻿function renderFamilyTree(nodes, edges, spouseEdges, dotnetHelper) {
+﻿function renderFamilyTree(nodes, edges, spouseEdges, dotnetHelper, treeName) {
     const familyTree = document.getElementById("familyTree");
     if (!familyTree) {
         console.error("Element #familyTree not found");
@@ -159,7 +159,7 @@
                 }
 
                 // Place spouses side by side centered above children
-                const spouseDistance = 80; // Reduced from 100 to make spouses closer
+                const spouseDistance = 100; // Reduced from 100 to make spouses closer
                 spouse1Pos.x = marriagePos.x - spouseDistance / 2;
                 spouse2Pos.x = marriagePos.x + spouseDistance / 2;
                 spouse1Pos.y = marriagePos.y - 40; // Reduced vertical distance
@@ -326,7 +326,7 @@
         .attr("dy", 45) // Reduced from 50
         .attr("text-anchor", "middle")
         .attr("font-family", "Arial, sans-serif") /////////////////////////////////////////////
-        .attr("font-size", "12px") // Reduced from 14px
+        .attr("font-size", "18px") // Reduced from 14px
         .attr("font-weight", "bold")
         .attr("fill", "#343a40")
         .text(d => d.label);
@@ -336,11 +336,13 @@
         .attr("dy", 60) // Reduced from 70
         .attr("text-anchor", "middle")
         .attr("font-family", "Arial, sans-serif")  ////////////////////////////////
-        .attr("font-size", "10px") // Reduced from 12px
-        .attr("fill", "#6c757d")
+        .attr("font-size", "14px") // Reduced from 12px
+        .attr("fill", "#343a40")
         .text(d => {
             if (d.birthYear) {
-                return `(${d.birthYear}${d.deathYear ? `-${d.deathYear}` : ''})`;
+                const birth = new Date(d.birthYear).toISOString().split('T')[0];
+                const death = d.deathYear ? new Date(d.deathYear).toISOString().split('T')[0] : '';
+                return `(${birth}${death ? ` - ${death}` : ''})`;
             }
             return '';
         });
@@ -407,7 +409,7 @@
         .attr("font-size", "24px")
         .attr("font-weight", "bold")
         .attr("fill", "#0E4158")
-        .text("Family Tree");
+        .text(treeName);
 
     // Improve zoom functionality
     const zoom = d3.zoom()

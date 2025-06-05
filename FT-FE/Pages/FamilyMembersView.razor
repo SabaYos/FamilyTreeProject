@@ -55,8 +55,7 @@
                                         <MudButton Size="Size.Small"
                                         Variant="Variant.Text"
                                         Color="Color.Primary"
-                                        OnClick="@(async () => await AddRelationship(member.FamilyMemberId, "Spouse"))"
-                                        Disabled="@(!validRelationships.TryGetValue(member.FamilyMemberId, out var rels) || !rels["Spouse"])">
+                                        OnClick="@(async () => await AddRelationship(member.FamilyMemberId, "Spouse"))">
                                             Spouse
                                         </MudButton>
                                     </MudTooltip>
@@ -66,8 +65,7 @@
                                             <MudButton Size="Size.Small"
                                             Variant="Variant.Text"
                                             Color="Color.Primary"
-                                            OnClick="@(async () => await AddRelationship(member.FamilyMemberId, "Child"))"
-                                            Disabled="@(!validRelationships.TryGetValue(member.FamilyMemberId, out var rels) || !rels["Child"])">
+                                            OnClick="@(async () => await AddRelationship(member.FamilyMemberId, "Child"))">
                                                 Child
                                             </MudButton>
                                         </MudTooltip>
@@ -75,8 +73,7 @@
                                             <MudButton Size="Size.Small"
                                             Variant="Variant.Text"
                                             Color="Color.Primary"
-                                            OnClick="@(async () => await AddRelationship(member.FamilyMemberId, "Parent"))"
-                                            Disabled="@(!validRelationships.TryGetValue(member.FamilyMemberId, out var rels) || !rels["Parent"])">
+                                            OnClick="@(async () => await AddRelationship(member.FamilyMemberId, "Parent"))">
                                                 Parent
                                             </MudButton>
                                         </MudTooltip>
@@ -135,7 +132,6 @@
     private List<FamilyMemberDto> filteredMembers = new List<FamilyMemberDto>();
     private readonly List<string> relationshipTypes = new List<string> { "Spouse", "Child", "Parent" };
 
-    private Dictionary<int, Dictionary<string, bool>> validRelationships;
     private List<_Edge> spouseEdges = new List<_Edge>(); // Initialize to avoid null
 
     private string userId;
@@ -199,7 +195,6 @@
         Console.WriteLine($"Token retrieved: {token.Substring(0, 10)}..."); // Log first 10 chars for debugging
         await LoadFamilyMembers();
         await RenderFamilyTree();
-        await ComputeValidRelationships();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -224,7 +219,6 @@
         {
             var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
             var response = await client.GetAsync($"FamilyMember?familyTreeId={FamilyTreeId}");
             if (response.IsSuccessStatusCode)
             {
@@ -248,30 +242,6 @@
         StateHasChanged();
     }
 
-    private async Task ComputeValidRelationships()
-    {
-        if (familyMembers == null || !familyMembers.Any())
-        {
-            validRelationships = new Dictionary<int, Dictionary<string, bool>>();
-            Console.WriteLine("No family members available for relationships.");
-            return;
-        }
-
-        validRelationships = new Dictionary<int, Dictionary<string, bool>>();
-        foreach (var member in familyMembers)
-        {
-            var relationships = new Dictionary<string, bool>
-            {
-                { "Spouse", await CanAddRelationship(member, "Spouse") },
-                { "Child", await CanAddRelationship(member, "Child") },
-                { "Parent", !IsPartOfMarriage(member.FamilyMemberId.ToString()) && await CanAddRelationship(member, "Parent") }
-            };
-            validRelationships[member.FamilyMemberId] = relationships;
-            Console.WriteLine($"Valid relationships for {member.FirstName} {member.LastName} (ID: {member.FamilyMemberId}): " +
-                              $"Spouse={relationships["Spouse"]}, Child={relationships["Child"]}, Parent={relationships["Parent"]}");
-        }
-        StateHasChanged();
-    }
 
     private bool IsPartOfMarriage(string memberId)
     {
@@ -287,132 +257,10 @@
             return;
         }
 
-        if (!validRelationships[relatedMemberId][relationshipType])
-        {
-            ErrorMessage = $"Cannot add {relationshipType} relationship with {relatedMember.FirstName} {relatedMember.LastName}.";
-            return;
-        }
-
         selectedRelatedMemberId = relatedMemberId;
         selectedRelationshipType = relationshipType;
         Console.WriteLine($"Relationship set: {relationshipType} with member ID {relatedMemberId}");
         StateHasChanged();
-    }
-
-    private async Task<bool> CanAddRelationship(FamilyMemberDto relatedMember, string relationshipType)
-    {
-        var currentMember = editingMember ?? newMember;
-        if (currentMember == null || relatedMember == null)
-        {
-            Console.WriteLine($"CanAddRelationship: Null member detected. CurrentMember={currentMember}, RelatedMember={relatedMember}");
-            return false;
-        }
-
-        if (currentMember.FamilyMemberId == relatedMember.FamilyMemberId)
-        {
-            Console.WriteLine($"CanAddRelationship: Same member ID {currentMember.FamilyMemberId}");
-            return false;
-        }
-
-        var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
-        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        List<RelationshipDto> relationships = null;
-        try
-        {
-            var response = await client.GetAsync($"Relationship?familyTreeId={FamilyTreeId}");
-            if (response.IsSuccessStatusCode)
-            {
-                relationships = await response.Content.ReadFromJsonAsync<List<RelationshipDto>>();
-                Console.WriteLine($"CanAddRelationship: Fetched {relationships?.Count ?? 0} relationships for FamilyTreeId={FamilyTreeId}");
-            }
-            else
-            {
-                var errorBody = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"CanAddRelationship: Failed to load relationships: {response.StatusCode}, Details: {errorBody}");
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"CanAddRelationship: Error loading relationships: {ex.Message}");
-            return false;
-        }
-
-        relationships ??= new List<RelationshipDto>();
-
-        switch (relationshipType)
-        {
-            case "Spouse":
-                bool currentHasSpouse = relationships.Any(r =>
-                    (r.FromPersonId == currentMember.FamilyMemberId || r.ToPersonId == currentMember.FamilyMemberId) &&
-                    r.RelationshipType == "Spouse");
-                bool relatedHasSpouse = relationships.Any(r =>
-                    (r.FromPersonId == relatedMember.FamilyMemberId || r.ToPersonId == relatedMember.FamilyMemberId) &&
-                    r.RelationshipType == "Spouse");
-                bool genderMatch = currentMember.Gender != relatedMember.Gender;
-                Console.WriteLine($"CanAddRelationship(Spouse): CurrentHasSpouse={currentHasSpouse}, RelatedHasSpouse={relatedHasSpouse}, GenderMatch={genderMatch}");
-                return !currentHasSpouse && !relatedHasSpouse && genderMatch;
-
-            case "Child":
-                if (IsPartOfMarriage(relatedMember.FamilyMemberId.ToString()))
-                {
-                    var spouseEdge = spouseEdges?.FirstOrDefault(e => e.From == relatedMember.FamilyMemberId.ToString() || e.To == relatedMember.FamilyMemberId.ToString());
-                    if (spouseEdge == null)
-                    {
-                        Console.WriteLine($"CanAddRelationship(Child): No spouse edge for member {relatedMember.FamilyMemberId}");
-                        return false;
-                    }
-
-                    var otherSpouseId = spouseEdge.From == relatedMember.FamilyMemberId.ToString() ? spouseEdge.To : spouseEdge.From;
-                    if (string.IsNullOrEmpty(otherSpouseId))
-                    {
-                        Console.WriteLine($"CanAddRelationship(Child): Invalid otherSpouseId for member {relatedMember.FamilyMemberId}");
-                        return false;
-                    }
-
-                    bool isAlreadyChildOfRelated = relationships.Any(r =>
-                        r.FromPersonId == relatedMember.FamilyMemberId &&
-                        r.ToPersonId == currentMember.FamilyMemberId &&
-                        r.RelationshipType == "Child");
-                    bool isAlreadyChildOfOther = relationships.Any(r =>
-                        r.FromPersonId.ToString() == otherSpouseId &&
-                        r.ToPersonId == currentMember.FamilyMemberId &&
-                        r.RelationshipType == "Child");
-                    Console.WriteLine($"CanAddRelationship(Child-Marriage): IsAlreadyChildOfRelated={isAlreadyChildOfRelated}, IsAlreadyChildOfOther={isAlreadyChildOfOther}");
-                    return !isAlreadyChildOfRelated && !isAlreadyChildOfOther;
-                }
-                else
-                {
-                    bool isAlreadyChild = relationships.Any(r =>
-                        r.FromPersonId == relatedMember.FamilyMemberId &&
-                        r.ToPersonId == currentMember.FamilyMemberId &&
-                        r.RelationshipType == "Child");
-                    bool relatedHasTwoParents = relatedMember.MotherId.HasValue && relatedMember.FatherId.HasValue;
-                    bool isParentOfCurrent = relationships.Any(r =>
-                        r.FromPersonId == relatedMember.FamilyMemberId &&
-                        r.ToPersonId == currentMember.FamilyMemberId &&
-                        r.RelationshipType == "Child");
-                    Console.WriteLine($"CanAddRelationship(Child-Single): IsAlreadyChild={isAlreadyChild}, RelatedHasTwoParents={relatedHasTwoParents}, IsParentOfCurrent={isParentOfCurrent}");
-                    return !isAlreadyChild && !relatedHasTwoParents && !isParentOfCurrent;
-                }
-
-            case "Parent":
-                bool currentHasTwoParents = currentMember.MotherId.HasValue && currentMember.FatherId.HasValue;
-                bool isAlreadyParent = relationships.Any(r =>
-                    r.FromPersonId == relatedMember.FamilyMemberId &&
-                    r.ToPersonId == currentMember.FamilyMemberId &&
-                    r.RelationshipType == "Child");
-                bool isChildOfRelated = relationships.Any(r =>
-                    r.FromPersonId == currentMember.FamilyMemberId &&
-                    r.ToPersonId == relatedMember.FamilyMemberId &&
-                    r.RelationshipType == "Child");
-                Console.WriteLine($"CanAddRelationship(Parent): CurrentHasTwoParents={currentHasTwoParents}, IsAlreadyParent={isAlreadyParent}, IsChildOfRelated={isChildOfRelated}");
-                return !currentHasTwoParents && !isAlreadyParent && !isChildOfRelated;
-
-            default:
-                Console.WriteLine($"CanAddRelationship: Invalid relationship type {relationshipType}");
-                return false;
-        }
     }
 
     private async Task RenderFamilyTree()
@@ -428,6 +276,8 @@
         var spouseEdges = new List<_Edge>();
         var marriageNodes = new Dictionary<string, object>();
         List<RelationshipDto> validRelationships = new List<RelationshipDto>(); // Declare at method scope
+        string familyTreeName = "Your Family Tree";
+
 
         foreach (var member in familyMembers)
         {
@@ -437,7 +287,8 @@
                 label = $"{member.FirstName} {member.LastName}",
                 title = $"{member.FirstName} {member.LastName}",
                 type = "person",
-                gender = member.Gender ? "male" : "female"
+                gender = member.Gender ? "male" : "female",
+                birthYear = member.DateOfBirth
             });
         }
         Console.WriteLine($"Total family members: {familyMembers.Count}, Nodes created: {allNodes.Count}");
@@ -446,6 +297,11 @@
         {
             var client = HttpClientFactory.CreateClient("FamilyTreeAPI");
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var tree = await client.GetAsync($"familytrees/{FamilyTreeId}");
+            var treeName = await tree.Content.ReadFromJsonAsync<FamilyTreeDto>();
+            familyTreeName = treeName?.FamilyTreeName;
+
             Console.WriteLine("Fetching relationships from api/Relationships...");
             var response = await client.GetAsync($"Relationship?familyTreeId={FamilyTreeId}");
             if (response.IsSuccessStatusCode)
@@ -621,7 +477,7 @@
             }
         }
 
-        await JSRuntime.InvokeVoidAsync("renderFamilyTree", allNodes.ToArray(), edges, spouseEdges, dotNetObj);
+        await JSRuntime.InvokeVoidAsync("renderFamilyTree", allNodes.ToArray(), edges, spouseEdges, dotNetObj, familyTreeName);
     }
 
     [JSInvokable]
@@ -812,7 +668,6 @@
             CancelEdit();
             await LoadFamilyMembers();
             await RenderFamilyTree();
-            await ComputeValidRelationships();
         }
         catch (Exception ex)
         {
@@ -861,8 +716,6 @@
 
         StateHasChanged();
     }
-
-
 
     private void CancelEdit()
     {

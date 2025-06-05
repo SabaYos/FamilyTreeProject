@@ -1,4 +1,5 @@
 ﻿using FamilyTreeAPI.Models;
+using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -129,6 +130,83 @@ namespace FamilyTreeAPI.Controllers
 
                 if (!TryParseRelationshipType(dto.RelationshipType, out RelationshipType relationshipType))
                     return BadRequest("Invalid RelationshipType.");
+
+
+                // Custom logic for spouse relationships
+                if (relationshipType == RelationshipType.Spouse)
+                {
+
+                    var fromIsMale = fromPerson.Gender == true;
+                    var toIsMale = toPerson.Gender == true;
+
+                    // same gender
+                    if (fromPerson.Gender == toPerson.Gender)
+                        return BadRequest("Marriage must be between male and female.");
+
+                    //for invalid relations
+                    if (IsInvalidSpouseRelation(fromPerson, toPerson))
+                        return BadRequest("Invalid spouse relationship between family members.");
+
+                    var existingSpousesFrom = await _context.Relationships
+                        .Where(r =>
+                            r.RelationshipType == RelationshipType.Spouse &&
+                            (r.FromPersonId == dto.FromPersonId || r.ToPersonId == dto.FromPersonId))
+                            .ToListAsync();
+
+                    var existingSpousesTo = await _context.Relationships
+                        .Where(r =>
+                            r.RelationshipType == RelationshipType.Spouse &&
+                            (r.FromPersonId == dto.ToPersonId || r.ToPersonId == dto.ToPersonId))
+                        .ToListAsync();
+
+                    var existingReverse = await _context.Relationships
+                        .FirstOrDefaultAsync(r =>
+                            r.RelationshipType == RelationshipType.Spouse &&
+                            r.FromPersonId == dto.ToPersonId &&
+                            r.ToPersonId == dto.FromPersonId);
+
+                    if (existingReverse != null)
+                        return BadRequest("This spouse relationship already exists.");
+
+                    // one spouse for female
+                    if (!fromIsMale && existingSpousesFrom.Count >= 1)
+                        return BadRequest("A woman can only have one husband.");
+
+                    if (!toIsMale && existingSpousesTo.Count >= 1)
+                        return BadRequest("A woman can only have one husband.");
+
+                    // 4 for male
+                    if (fromIsMale && existingSpousesFrom.Count >= 4)
+                        return BadRequest("This man already has 4 wives.");
+
+                    if (toIsMale && existingSpousesTo.Count >= 4)
+                        return BadRequest("This man already has 4 wives.");
+
+
+                    bool sameFather = fromPerson.FatherId.HasValue && fromPerson.FatherId == toPerson.FatherId;
+                    bool sameMother = fromPerson.MotherId.HasValue && fromPerson.MotherId == toPerson.MotherId;
+
+                    if (sameFather || sameMother)
+                    {
+                        return BadRequest("Relation in invalid.");
+                    }
+                }
+
+                // custom validation for parent relation
+                if (relationshipType == RelationshipType.Parent || relationshipType == RelationshipType.Child)
+                {
+                    var parent = relationshipType == RelationshipType.Parent ? fromPerson : toPerson;
+                    var child = relationshipType == RelationshipType.Parent ? toPerson : fromPerson;
+
+                    if (!parent.DateOfBirth.HasValue || !child.DateOfBirth.HasValue)
+                        return BadRequest("Both parent and child must have valid date of birth.");
+
+                    if (parent.DateOfBirth.Value >= child.DateOfBirth.Value)
+                        return BadRequest("Parent must be older than the child.");
+
+                    if (parent.FamilyMemberId == child.FamilyMemberId)
+                        return BadRequest("A person cannot be their own parent.");
+                }
 
                 if (await CreatesCycle(dto.FromPersonId, dto.ToPersonId, relationshipType))
                     return BadRequest("This relationship would create a cycle in the family tree.");
@@ -369,6 +447,31 @@ namespace FamilyTreeAPI.Controllers
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        private bool IsInvalidSpouseRelation(FamilyMember from, FamilyMember to)
+        {
+
+            // no self refrencing
+            if (from.FamilyMemberId == to.FamilyMemberId)
+                return true;
+
+            // no marriage relation with mom or dad
+            if (from.FatherId == to.FamilyMemberId || from.MotherId == to.FamilyMemberId)
+                return true;
+
+            // mo marriage relation with child
+            if (to.FatherId == from.FamilyMemberId || to.MotherId == from.FamilyMemberId)
+                return true;
+
+            // no marriage relation between siblings
+            bool sameMother = from.MotherId != null && from.MotherId == to.MotherId;
+            bool sameFather = from.FatherId != null && from.FatherId == to.FatherId;
+
+            if (sameMother || sameFather)
+                return true;
+
+            return false;
         }
 
         private async Task ClearFamilyMemberRelationships(Relationship relationship)
